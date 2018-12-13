@@ -1,0 +1,1525 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>snake</title>
+  <script src="//cdn.jsdelivr.net/npm/phaser@3.11.0/dist/phaser.js"></script>
+  <style type="text/css">
+    body {
+      margin: 0;
+    }
+
+    .settings {
+      display: none;
+      position: absolute;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .visible {
+      display: block;
+    }
+
+    #body {
+      top: 230px;
+      left: 520px;
+    }
+
+    #food {
+      top: 300px;
+      left: 520px;
+    }
+
+    #wall {
+      top: 370px;
+      left: 520px;
+    }
+
+    #bg {
+      top: 440px;
+      left: 520px;
+    }
+
+    #sfx {
+      top: 510px;
+      left: 520px;
+    }
+
+    #music {
+      top: 590px;
+      left: 520px;
+    }
+
+    #portal {
+      top: 670px;
+      left: 520px;
+    }
+  </style>
+</head>
+
+<body>
+  <select name="" id="body" class="settings">
+    <option value="1 default" class="visible">default</option>
+    <option value="3 America" class="hidden" id="snake-america">America</option>
+    <option value="3 MLG" class="hidden" id="snake-mlg">MLG</option>
+    <option value="4 minecraft" class="hidden" id="snake-minecraft">minecraft</option>
+    <option value="1 roblox" class="hidden" id="snake-roblox">roblox</option>
+  </select>
+  <select name="" id="food" class="settings">
+    <option value="1 default" class="visible">default</option>
+    <option value="3 America" class="hidden" id="food-america">America</option>
+    <option value="3 MLG" class="hidden" id="food-mlg">MLG</option>
+    <option value="4 minecraft" class="hidden" id="food-minecraft">minecraft</option>
+    <option value="1 roblox" class="hidden" id="food-roblox">roblox</option>
+  </select>
+  <select name="" id="wall" class="settings">
+    <option value="1 default" class="visible">default</option>
+    <option value="3 America" class="hidden" id="wall-america">America</option>
+    <option value="3 MLG" class="hidden" id="wall-mlg">MLG</option>
+    <option value="4 minecraft" class="hidden" id="wall-minecraft">minecraft</option>
+    <option value="1 roblox" class="hidden" id="wall-roblox">roblox</option>
+  </select>
+  <select name="" id="bg" class="settings">
+    <option value="1 default" class="visible">default</option>
+    <option value="3 America" class="hidden" id="bg-america">America</option>
+    <option value="3 MLG" class="hidden" id="bg-mlg">MLG</option>
+    <option value="4 minecraft" class="hidden" id="bg-minecraft">minecraft</option>
+    <option value="1 roblox" class="hidden" id="bg-roblox">roblox</option>
+  </select>
+  <select name="" id="sfx" class="settings">
+    <option value="1 default" class="visible">default</option>
+    <option value="3 America" class="hidden" id="sfx-america">America</option>
+    <option value="3 MLG" class="hidden" id="sfx-mlg">MLG</option>
+    <option value="4 minecraft" class="hidden" id="sfx-minecraft">minecraft</option>
+    <option value="1 roblox" class="hidden" id="sfx-roblox">roblox</option>
+  </select>
+  <select name="" id="music" class="settings">
+    <option value="1 default" class="visible">default</option>
+    <option value="3 America" class="hidden" id="music-america">America</option>
+    <option value="3 MLG" class="hidden" id="music-mlg">MLG</option>
+    <option value="4 minecraft" class="hidden" id="music-minecraft">minecraft</option>
+    <option value="1 roblox" class="hidden" id="music-roblox">roblox</option>
+  </select>
+  <select name="" id="portal" class="settings">
+    <option value="1 default" class="visible">default</option>
+    <option value="3 America" class="hidden" id="portal-america">America</option>
+    <option value="3 MLG" class="hidden" id="portal-mlg">MLG</option>
+    <option value="4 minecraft" class="hidden" id="portal-minecraft">minecraft</option>
+    <option value="1 roblox" class="hidden" id="portal-roblox">roblox</option>
+  </select>
+  <script type="text/javascript">
+    var spacebar;
+    var maps = [];
+    var mapnum = -1;
+    var mapname = "";
+    var mapGrid = [
+      []
+    ];
+    var currentMap;
+    var enter;
+    var resetCursors = true;
+    var two;
+    var twoplayer = false;
+    var coop = false;
+    var wasd;
+    var numbers;
+
+    var coopnum = 1;
+    var upKeys;
+    var rightKeys;
+    var downKeys;
+    var leftKeys;
+
+    if (localStorage.getItem("settings") == null) {
+      var defaultSettings = {
+        snake: "1 default",
+        food: "1 default",
+        wall: "1 default",
+        bg: "1 default",
+        sfx: "1 default",
+        portal: "1 default",
+        music: "1 default"
+      };
+
+      localStorage.setItem("settings", JSON.stringify(defaultSettings));
+    }
+
+    //Theme variables
+    var snakeTheme = JSON.parse(localStorage.getItem("settings")).snake;
+    var foodTheme = JSON.parse(localStorage.getItem("settings")).food;
+    var wallTheme = JSON.parse(localStorage.getItem("settings")).wall;
+    var mapTheme = JSON.parse(localStorage.getItem("settings")).bg;
+    var sfxTheme = JSON.parse(localStorage.getItem("settings")).sfx;
+    var musicTheme = JSON.parse(localStorage.getItem("settings")).music;
+    var portalTheme = JSON.parse(localStorage.getItem("settings")).portal;
+
+    var imageWrap = 1;
+
+    var isPlaying = false;
+    var needMove = false;
+    var needMove2 = false;
+
+    var numLootboxes = 0;
+    if (localStorage.getItem("box") != null) {
+      numLootboxes = parseInt(localStorage.getItem("box"));
+    }
+
+    if (localStorage.getItem("locked") == null) {
+      var list = document.getElementById('body');
+      var locked = {};
+      var unlocked = {};
+      locked.themes = [];
+      unlocked.themes = [];
+      for (var i = 1; i < list.children.length; i++) {
+        var obj = {};
+        obj.theme = list.children[i].value;
+        obj.snake = true;
+        obj.bg = true;
+        obj.sfx = true;
+        obj.food = true;
+        obj.music = true;
+        obj.portal = true;
+        obj.wall = true;
+        locked.themes.push(obj);
+
+        var obj2 = {}
+        obj2.theme = list.children[i].value;
+        obj2.snake = false;
+        obj2.bg = false;
+        obj2.sfx = false;
+        obj2.food = false;
+        obj2.music = false;
+        obj2.portal = false;
+        obj2.wall = false;
+        unlocked.themes.push(obj2);
+      }
+      localStorage.setItem("locked", JSON.stringify(locked));
+      localStorage.setItem("unlocked", JSON.stringify(unlocked));
+    }
+
+    var Lootbox = new Phaser.Class({
+      Extends: Phaser.Scene,
+      initialize: function Lootbox() {
+        Phaser.Scene.call(this, {
+          key: "Lootbox"
+        });
+      },
+      preload: function() {
+        this.load.image('lbbg', 'lootboxbg.png');
+        this.load.image('box', 'lootbox.png');
+        this.load.image('open', 'openbox.png');
+        this.load.image('back', 'back.png');
+        this.load.image('opened', 'openedbox.png');
+      },
+      create: function() {
+        this.bg = this.add.image(512, 384, 'lbbg');
+        this.box = this.add.image(512, 475, 'box');
+        this.open = this.add.sprite(512, 700, 'open').setInteractive();
+        this.open.on('pointerdown', function() {
+          if (numLootboxes < 1)
+            return;
+          game.scene.getScene("Lootbox").box.destroy();
+          game.scene.getScene("Lootbox").box = game.scene.getScene("Lootbox").add.image(512, 475, 'opened');
+          openLootbox();
+          numLootboxes--;
+          localStorage.setItem("box", numLootboxes);
+        });
+        this.button = this.add.sprite(100, 50, 'back').setInteractive();
+        this.button.on('pointerdown', function() {
+          spacebar.reset();
+          game.scene.stop('Lootbox');
+          game.scene.start("MainMenu")
+        });
+      }
+    });
+
+    var Coop = new Phaser.Class({
+      Extends: Phaser.Scene,
+      initialize: function Coop() {
+        Phaser.Scene.call(this, {
+          key: "Coop"
+        })
+      },
+      preload: function() {
+        this.load.image("coopbg", "coopbg.png")
+      },
+      create: function() {
+        this.add.image(512, 384, "coopbg")
+        coop = true;
+        numbers = this.input.keyboard.addKeys({
+          two: Phaser.Input.Keyboard.KeyCodes.TWO,
+          three: Phaser.Input.Keyboard.KeyCodes.THREE,
+          four: Phaser.Input.Keyboard.KeyCodes.FOUR
+        });
+      },
+      update: function() {
+        if (numbers.two.isDown) {
+          coopnum = 2;
+          this.scene.stop("Coop")
+          this.scene.start("MapSelection")
+        } else if (numbers.three.isDown) {
+          coopnum = 3;
+          this.scene.stop("Coop")
+          this.scene.start("MapSelection")
+        } else if (numbers.four.isDown) {
+          coopnum = 4;
+          this.scene.stop("Coop")
+          this.scene.start("MapSelection")
+        }
+      }
+    })
+
+    var TwoPlayerSetup = new Phaser.Class({
+      Extends: Phaser.Scene,
+      initialize: function TwoPlayerSetup() {
+        Phaser.Scene.call(this, {
+          key: "TwoPlayerSetup"
+        })
+      },
+      preload: function() {
+        this.load.image("twoplayer", "twoplayer.png")
+      },
+      create: function() {
+        this.add.image(512, 384, "twoplayer")
+        twoplayer = true;
+        coop = false;
+        coopnum = 1;
+        spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        spacebar.reset();
+      },
+      update: function() {
+        if (spacebar.isDown) {
+          spacebar.reset();
+          game.scene.stop("TwoPlayerSetup")
+          game.scene.start("MapSelection")
+        }
+      }
+    })
+
+    var MapEditor = new Phaser.Class({
+      Extends: Phaser.Scene,
+      initialize: function MapEditor() {
+        Phaser.Scene.call(this, {
+          key: "MapEditor"
+        })
+      },
+      preload: function() {
+        this.load.image("tile", "tile.png");
+        this.load.image("wall", snakeTheme + '/wall.png')
+        this.load.image("bg", snakeTheme + "/bg.png");
+      },
+      create: function() {
+        this.bg = this.add.sprite(512, 384, "bg").setInteractive();
+        this.bg.on('pointerdown', function() {
+          var i = parseInt(game.input.mousePointer.y / 16)
+          var j = parseInt(game.input.mousePointer.x / 16)
+          mapGrid[i][j] = 1;
+          game.scene.getScene("MapEditor").add.image(j * 16 + 8, i * 16 + 8, 'wall')
+        })
+        for (var i = 0; i < 64; i++) {
+          for (var j = 0; j < 48; j++) {
+            this.add.image(i * 16 + 8, j * 16 + 8, 'tile')
+          }
+        }
+        mapGrid = [
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ]
+        enter = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+        cursors = this.input.keyboard.createCursorKeys();
+      },
+      update: function() {
+        if (enter.isDown) {
+          pushMap();
+        }
+        if (cursors.shift.isDown) {
+          game.scene.stop("MapEditor");
+          game.scene.start("MainMenu")
+        }
+      }
+    })
+
+    var MapSelection = new Phaser.Class({
+      Extends: Phaser.Scene,
+      initialize: function MapSelection() {
+        Phaser.Scene.call(this, {
+          key: "MapSelection"
+        })
+      },
+      preload: function() {
+        this.load.image("map0", "map0.png")
+        this.load.image("map1", "map1.png")
+        this.load.image("map2", "map2.png")
+        this.load.image("back", "back.png")
+        this.load.image("random", "random.png");
+      },
+      create: function() {
+        for (var i = 0; i < 3; i++) {
+          var temp = this.add.sprite(512, 225 + i * 200, "map" + i).setScale(0.2, 0.20);
+          temp.on('pointerdown', function() {
+            if (this.y == 225) {
+              mapnum = 0;
+              mapname = "map0"
+            } else if (this.y == 425) {
+              mapnum = 1;
+              mapname = "map1"
+            } else {
+              mapnum = 2;
+              mapname = "map2"
+            }
+            game.sound.stopAll();
+            game.scene.stop("MapSelection");
+            game.scene.start("Game")
+          })
+          temp.setInteractive();
+        }
+
+        this.random = this.add.sprite(100, 700, "random").setInteractive();
+        this.random.on('pointerdown', function() {
+          mapnum = parseInt(Math.random() * 3);
+          mapname = "map" + mapnum
+          game.sound.stopAll();
+          game.scene.stop("MapSelection");
+          game.scene.start("Game")
+        })
+
+        var select = document.createElement("select");
+        select.id = "custommap"
+        var userMaps = JSON.parse(localStorage.getItem("maps"))
+        for (var i = 0; i < userMaps.length; i++) {
+          var temp = document.createElement("option")
+          temp.value = userMaps[i].name;
+          temp.appendChild(document.createTextNode(userMaps[i].name))
+          select.appendChild(temp);
+        }
+        var tempdiv = document.createElement("div");
+        var submit = document.createElement("button");
+        submit.appendChild(document.createTextNode("Load"))
+        submit.onclick = function() {
+          loadMap(document.getElementById("custommap").value);
+          game.scene.stop("MapSelection");
+          game.scene.start("Game")
+        }
+        tempdiv.style.position = "absolute";
+        tempdiv.style.top = "50px";
+        tempdiv.style.left = "450px";
+        tempdiv.appendChild(select);
+        tempdiv.appendChild(submit)
+        document.body.appendChild(tempdiv);
+
+        this.button = this.add.sprite(100, 50, 'back').setInteractive();
+        this.button.on('pointerdown', function() {
+          spacebar.reset();
+          document.body.removeChild(document.getElementById("custommap").parentElement)
+          game.scene.stop('MapSelection');
+          game.scene.start("MainMenu")
+        })
+      },
+      update: function() {
+
+      }
+    })
+
+    var Settings = new Phaser.Class({
+      Extends: Phaser.Scene,
+      initialize: function Settings() {
+        Phaser.Scene.call(this, {
+          key: 'Settings'
+        })
+      },
+      preload: function() {
+        this.load.image('settingsbg', 'settingsbg2.png');
+        this.load.image('back', 'back.png')
+      },
+      create: function() {
+        addOptions();
+        this.add.image(512, 384, 'settingsbg');
+        this.button = this.add.sprite(100, 50, 'back').setInteractive();
+        this.button.on('pointerdown', function() {
+          snakeTheme = document.getElementById("body").value
+          foodTheme = document.getElementById("food").value
+          wallTheme = document.getElementById("wall").value
+          mapTheme = document.getElementById("bg").value
+          sfxTheme = document.getElementById("sfx").value
+          musicTheme = document.getElementById("music").value
+          portalTheme = document.getElementById("portal").value
+
+          var options = document.body.getElementsByClassName("settings")
+          for (var i = 0; i < options.length; i++) {
+            options[i].style.display = "none"
+          }
+          var settings = JSON.parse(localStorage.getItem("settings"))
+          if (settings == null) {
+            var obj = {};
+            obj.snake = snakeTheme;
+            obj.food = foodTheme;
+            obj.wall = wallTheme;
+            obj.bg = mapTheme;
+            obj.sfx = sfxTheme;
+            obj.music = musicTheme;
+            obj.portal = portalTheme
+            localStorage.setItem("settings", JSON.stringify(obj));
+          } else {
+            settings.snake = snakeTheme;
+            settings.food = foodTheme;
+            settings.wall = wallTheme;
+            settings.bg = mapTheme;
+            settings.sfx = sfxTheme;
+            settings.music = musicTheme;
+            settings.portal = portalTheme
+            localStorage.setItem("settings", JSON.stringify(settings));
+          }
+          game.scene.stop('Settings');
+          game.scene.start('MainMenu')
+        })
+        var options = document.body.getElementsByClassName("settings")
+        for (var i = 0; i < options.length; i++) {
+          options[i].style.display = "inline"
+        }
+      }
+    })
+
+    var HighScores = new Phaser.Class({
+      Extends: Phaser.Scene,
+      initialize: function HighScores() {
+        Phaser.Scene.call(this, {
+          key: 'HighScores'
+        })
+      },
+      preload: function() {
+        this.load.image('highscores', 'highscores.png')
+        this.load.image('back', 'back.png')
+      },
+      create: function() {
+        wasd = null;
+        this.add.image(512, 384, 'highscores')
+        this.button = this.add.sprite(100, 50, 'back').setInteractive();
+        this.button.on('pointerdown', function() {
+          document.body.removeChild(document.getElementById('filter'))
+          game.scene.stop('HighScores');
+          game.scene.start('MainMenu')
+        })
+        writeSaves("HighScores")
+
+        var filter = document.createElement("div");
+        filter.id = "filter"
+        var select = document.createElement("select");
+        var userMaps = JSON.parse(localStorage.getItem("maps"))
+        var builtInMaps = JSON.parse(localStorage.getItem("gameMaps"))
+        for (var i = 0; i < userMaps.length; i++) {
+          var temp = document.createElement("option")
+          temp.value = userMaps[i].name;
+          temp.appendChild(document.createTextNode(userMaps[i].name))
+          select.appendChild(temp);
+        }
+        for (var i = 0; i < builtInMaps.length; i++) {
+          var temp = document.createElement("option")
+          temp.value = builtInMaps[i].name;
+          temp.appendChild(document.createTextNode(builtInMaps[i].name))
+          select.appendChild(temp);
+        }
+
+        var temp1 = document.createElement("option")
+        temp1.appendChild(document.createTextNode("1 Player"))
+        select.appendChild(temp1)
+        var temp2 = document.createElement("option")
+        temp2.appendChild(document.createTextNode("2 Player"))
+        select.appendChild(temp2)
+
+        var submit = document.createElement("button");
+        submit.appendChild(document.createTextNode("Load"))
+        submit.onclick = function() {
+          writeSaves("HighScores", select.value)
+        }
+        filter.style.position = "absolute";
+        filter.style.top = "50px";
+        filter.style.left = "450px";
+        filter.appendChild(select);
+        filter.appendChild(submit)
+        document.body.appendChild(filter);
+      }
+    })
+
+    var MainMenu = new Phaser.Class({
+      Extends: Phaser.Scene,
+      initialize: function MainMenu() {
+        Phaser.Scene.call(this, {
+          key: 'MainMenu'
+        })
+      },
+      preload: function() {
+        this.load.image('mainmenu', 'mainmenu.png');
+        this.load.image('highscorebutton', 'highscorebutton.png')
+        this.load.image('settings', 'settings.png')
+        this.load.image('mapeditor', 'mapeditor.png')
+        this.load.image('coop', 'coop.png')
+        this.load.image('lootbox', 'lootboxnum.png')
+        this.load.audio('bgmusic', 'music.mp3')
+      },
+      create: function() {
+        this.add.image(512, 384, 'mainmenu')
+        this.button = this.add.sprite(124, 675, 'highscorebutton').setInteractive()
+        this.editor = this.add.sprite(400, 675, 'mapeditor').setInteractive();
+        this.settings = this.add.sprite(670, 675, 'settings').setInteractive()
+        this.coop = this.add.sprite(900, 675, 'coop').setInteractive()
+        spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.editor.on('pointerdown', function() {
+          game.scene.stop('MainMenu')
+          game.scene.start('MapEditor')
+        })
+        this.button.on('pointerdown', function() {
+          game.scene.stop('MainMenu')
+          game.scene.start('HighScores')
+        })
+        this.settings.on('pointerdown', function() {
+          game.scene.stop('MainMenu')
+          game.scene.start('Settings')
+        })
+        this.coop.on('pointerdown', function() {
+          game.scene.stop('MainMenu')
+          game.scene.start("Coop")
+        })
+
+        this.box = this.add.sprite(900, 400, 'lootbox').setInteractive()
+        this.box.setScale(0.35, 0.35)
+        this.add.text(952, 326, numLootboxes, {
+          fontSize: "24pt"
+        })
+        this.box.on('pointerdown', function() {
+          game.scene.stop('MainMenu')
+          game.scene.start("Lootbox")
+        })
+
+        two = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
+        if (!isPlaying) {
+          this.sound.play('bgmusic')
+          isPlaying = true;
+        }
+      },
+      update: function() {
+        if (spacebar.isDown) {
+          twoplayer = false;
+          coop = false;
+          coopnum = 1;
+          this.scene.stop('MainMenu')
+          this.scene.start('MapSelection');
+        } else if (two.isDown) {
+          this.scene.stop("MainMenu")
+          this.scene.start("TwoPlayerSetup")
+        }
+      }
+    })
+
+    var GameOver = new Phaser.Class({
+      Extends: Phaser.Scene,
+      initialize: function GameOver() {
+        Phaser.Scene.call(this, {
+          key: 'GameOver'
+        })
+      },
+      preload: function() {
+        this.load.image('gameover', 'gameover.png');
+
+        this.load.audio('bgmusic', 'music.mp3')
+      },
+      create: function() {
+        imageWrap = 1;
+        this.add.image(512, 384, 'gameover');
+        spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+        scoreText = this.add.text(550, 275, score, {
+          fontSize: '100pt',
+          fill: '#fff'
+        });
+        this.add.text(450, 450, "High Scores", {
+          fontSize: '20pt',
+          fill: '#fff'
+        })
+        this.add.text(400, 725, "Press Space to start a new game", {
+          fontSize: '14pt',
+          fill: '#fff'
+        })
+        writeSaves("GameOver");
+
+      },
+      update: function() {
+        if (spacebar.isDown) {
+          direction = null;
+          direction2 = null
+          if (document.getElementById("name") != null) {
+            document.body.removeChild(document.getElementById("name").parentNode)
+          }
+          this.scene.stop("GameOver")
+          cursors = this.input.keyboard.createCursorKeys();
+          wasd = this.input.keyboard.addKeys({
+            w: Phaser.Input.Keyboard.KeyCodes.W,
+            s: Phaser.Input.Keyboard.KeyCodes.S,
+            a: Phaser.Input.Keyboard.KeyCodes.A,
+            d: Phaser.Input.Keyboard.KeyCodes.D
+          });
+          this.scene.start('MapSelection');
+          this.sound.play('music')
+        }
+      }
+    })
+
+    var Game = new Phaser.Class({
+      Extends: Phaser.Scene,
+      initialize: function Game() {
+        Phaser.Scene.call(this, {
+          key: 'Game'
+        })
+      },
+      preload: function() {
+        this.sound.stopAll();
+
+        this.load.image('bg', "" + mapTheme + '/bg.png');
+        this.load.image('tile', 'tile.png');
+        this.load.image('snake2', 'snake2.png');
+
+        for (var i = 0; i < parseInt(snakeTheme.split(" ")[0]); i++) {
+          this.load.image("" + i, "" + snakeTheme + "/" + i + ".png")
+        }
+
+        this.load.image('food', "" + foodTheme + '/food.png');
+        this.load.image('portal', "" + portalTheme + '/portal.png');
+        this.load.image('wall', "" + wallTheme + '/wall.png');
+        this.load.audio('music', ["" + musicTheme + '/music.mp3'])
+        this.load.audio('eat', ["" + sfxTheme + '/eat.mp3'])
+        this.load.audio('portal', ["" + sfxTheme + '/portal.mp3'])
+        this.load.audio('death', ["" + sfxTheme + '/death.mp3'])
+      },
+      create: function() {
+        if (document.getElementById("custommap") != null) {
+          document.body.removeChild(document.getElementById("custommap").parentElement)
+        }
+        direction = null;
+        loadMap();
+        var Snake = new Phaser.Class({
+          initialize: function Snake(scene, x, y, player) {
+            this.body = scene.add.group();
+            if (player == 1) {
+              this.head = this.body.create(x, y, '0');
+            } else {
+              this.head = this.body.create(x, y, 'snake2');
+            }
+            this.headPos = {
+              x: x,
+              y: y
+            };
+            this.tailPos = {
+              x: x,
+              y: y
+            };
+            this.alive = true;
+          }
+        })
+
+        var Food = new Phaser.Class({
+          Extends: Phaser.GameObjects.Image,
+          initialize: function Food(scene, x, y) {
+            Phaser.GameObjects.Image.call(this, scene)
+            this.setTexture('food');
+            this.setPosition(x, y);
+            this.pos = {
+              x: x,
+              y: y
+            };
+            scene.children.add(this);
+          }
+        })
+
+        this.add.image(512, 384, 'bg');
+
+        for (var i = 0; i < 64; i++) {
+          for (var j = 0; j < 48; j++) {
+            if (currentMap[j][i] == 1) {
+              this.add.image(i * 16 + 8, j * 16 + 8, 'wall')
+            }
+          }
+        }
+
+        var playerx = parseInt((Math.random() * 62) + 1) * 16 + 8
+        var playery = parseInt((Math.random() * 46) + 1) * 16 + 8
+        while (currentMap[parseInt(playery / 16)][parseInt(playerx / 16)] == 1) {
+          playerx = parseInt((Math.random() * 62) + 1) * 16 + 8
+          playery = parseInt((Math.random() * 46) + 1) * 16 + 8
+        }
+        player = new Snake(this, playerx, playery, 1)
+
+        if (twoplayer) {
+          var player2x = parseInt((Math.random() * 62) + 1) * 16 + 8
+          var player2y = parseInt((Math.random() * 46) + 1) * 16 + 8
+          while (currentMap[parseInt(player2y / 16)][parseInt(player2x / 16)] == 1) {
+            player2x = parseInt((Math.random() * 62) + 1) * 16 + 8
+            player2y = parseInt((Math.random() * 46) + 1) * 16 + 8
+          }
+          player2 = new Snake(this, player2x, player2y, 2)
+        } else {
+          player2 = null;
+        }
+
+        portal1 = this.add.image(parseInt((Math.random() * 62) + 1) * 16 + 8, parseInt((Math.random() * 46) + 1) * 16 + 8, 'portal');
+        while (currentMap[parseInt(portal1.y / 16)][parseInt(portal1.x / 16)] == 1 || (portal1.x == player.headPos.x && portal1.y == player.headPos.y) || (player2 != null && portal1.x == player2.headPos.x && portal1.y == player2.headPos.y)) {
+          portal1.destroy();
+          portal1 = this.add.image(parseInt((Math.random() * 62) + 1) * 16 + 8, parseInt((Math.random() * 46) + 1) * 16 + 8, 'portal');
+        }
+
+        portal2 = this.add.image(parseInt((Math.random() * 62) + 1) * 16 + 8, parseInt((Math.random() * 46) + 1) * 16 + 8, 'portal');
+        while (currentMap[parseInt(portal2.y / 16)][parseInt(portal2.x / 16)] == 1 || (portal2.x == player.headPos.x && portal2.y == player.headPos.y) || (portal2.x == portal1.x && portal2.y == portal1.y) || (player2 != null && portal2.x ==
+            player2.headPos.x && portal2.y == player2.headPos.y)) {
+          portal2.destroy();
+          portal2 = this.add.image(parseInt((Math.random() * 62) + 1) * 16 + 8, parseInt((Math.random() * 46) + 1) * 16 + 8, 'portal');
+        }
+
+        var pos = generateFood();
+        food = new Food(this, pos.x, pos.y)
+
+        cursors = this.input.keyboard.createCursorKeys();
+        wasd = this.input.keyboard.addKeys({
+          w: Phaser.Input.Keyboard.KeyCodes.W,
+          s: Phaser.Input.Keyboard.KeyCodes.S,
+          a: Phaser.Input.Keyboard.KeyCodes.A,
+          d: Phaser.Input.Keyboard.KeyCodes.D
+        });
+        upKeys = this.input.keyboard.addKeys({
+          w: Phaser.Input.Keyboard.KeyCodes.W,
+          t: Phaser.Input.Keyboard.KeyCodes.T,
+          i: Phaser.Input.Keyboard.KeyCodes.I,
+          up: Phaser.Input.Keyboard.KeyCodes.UP
+        });
+        rightKeys = this.input.keyboard.addKeys({
+          d: Phaser.Input.Keyboard.KeyCodes.D,
+          h: Phaser.Input.Keyboard.KeyCodes.H,
+          l: Phaser.Input.Keyboard.KeyCodes.L,
+          right: Phaser.Input.Keyboard.KeyCodes.RIGHT
+        });
+        downKeys = this.input.keyboard.addKeys({
+          s: Phaser.Input.Keyboard.KeyCodes.S,
+          g: Phaser.Input.Keyboard.KeyCodes.G,
+          k: Phaser.Input.Keyboard.KeyCodes.K,
+          down: Phaser.Input.Keyboard.KeyCodes.DOWN
+        });
+        leftKeys = this.input.keyboard.addKeys({
+          a: Phaser.Input.Keyboard.KeyCodes.A,
+          f: Phaser.Input.Keyboard.KeyCodes.F,
+          j: Phaser.Input.Keyboard.KeyCodes.J,
+          left: Phaser.Input.Keyboard.KeyCodes.LEFT
+        });
+
+        score = 1;
+        count = 0;
+
+        this.sound.play('music')
+        if (musicTheme == "4 minecraft") {
+          this.sound.sounds[1].setVolume(5);
+        }
+        this.sound.sounds[1].loop = true;
+        this.sound.sounds[1].volume = 0.5;
+      },
+      update: function() {
+        if (resetCursors) {
+          cursors.up.reset();
+          cursors.right.reset();
+          cursors.down.reset();
+          cursors.left.reset();
+
+          wasd.w.reset();
+          wasd.d.reset();
+          wasd.s.reset();
+          wasd.a.reset();
+
+          resetCursors = false;
+        }
+
+        if (!needMove) {
+          if (coopnum == 1) {
+            if (cursors.left.isDown && direction != Directions.RIGHT) {
+              direction = Directions.LEFT;
+            } else if (cursors.up.isDown && direction != Directions.DOWN) {
+              direction = Directions.UP;
+            } else if (cursors.right.isDown && direction != Directions.LEFT) {
+              direction = Directions.RIGHT;
+            } else if (cursors.down.isDown && direction != Directions.UP) {
+              direction = Directions.DOWN;
+            }
+            needMove = true;
+          } else if (coopnum == 2) {
+            if (leftKeys.left.isDown && leftKeys.a.isDown && direction != Directions.RIGHT) {
+              direction = Directions.LEFT;
+            } else if (upKeys.up.isDown && upKeys.w.isDown && direction != Directions.DOWN) {
+              direction = Directions.UP;
+            } else if (rightKeys.right.isDown && rightKeys.d.isDown && direction != Directions.LEFT) {
+              direction = Directions.RIGHT;
+            } else if (downKeys.down.isDown && downKeys.s.isDown && direction != Directions.UP) {
+              direction = Directions.DOWN;
+            }
+            needMove = true;
+          } else if (coopnum == 3) {
+            if (leftKeys.left.isDown && leftKeys.a.isDown && leftKeys.f.isDown && direction != Directions.RIGHT) {
+              direction = Directions.LEFT;
+            } else if (upKeys.up.isDown && upKeys.w.isDown && upKeys.t.isDown && direction != Directions.DOWN) {
+              direction = Directions.UP;
+            } else if (rightKeys.right.isDown && rightKeys.d.isDown && rightKeys.h.isDown && direction != Directions.LEFT) {
+              direction = Directions.RIGHT;
+            } else if (downKeys.down.isDown && downKeys.s.isDown && downKeys.g.isDown && direction != Directions.UP) {
+              direction = Directions.DOWN;
+            }
+            needMove = true;
+          } else if (coopnum == 4) {
+            if (leftKeys.left.isDown && leftKeys.a.isDown && leftKeys.f.isDown && leftKeys.j.isDown && direction != Directions.RIGHT) {
+              direction = Directions.LEFT;
+            } else if (upKeys.up.isDown && upKeys.w.isDown && upKeys.t.isDown && upKeys.i.isDown && direction != Directions.DOWN) {
+              direction = Directions.UP;
+            } else if (rightKeys.right.isDown && rightKeys.d.isDown && rightKeys.h.isDown && rightKeys.l.isDown && direction != Directions.LEFT) {
+              direction = Directions.RIGHT;
+            } else if (downKeys.down.isDown && downKeys.s.isDown && downKeys.g.isDown && downKeys.k.isDown && direction != Directions.UP) {
+              direction = Directions.DOWN;
+            }
+            needMove = true;
+          }
+        }
+
+        if (!needMove2) {
+          if (wasd.a.isDown && direction2 != Directions.RIGHT) {
+            direction2 = Directions.LEFT;
+            needMove2 = true;
+          } else if (wasd.w.isDown && direction2 != Directions.DOWN) {
+            direction2 = Directions.UP;
+            needMove2 = true;
+          } else if (wasd.d.isDown && direction2 != Directions.LEFT) {
+            direction2 = Directions.RIGHT;
+            needMove2 = true;
+          } else if (wasd.s.isDown && direction2 != Directions.UP) {
+            direction2 = Directions.DOWN;
+            needMove2 = true;
+          }
+        }
+
+        if (count >= 5 && player.alive) {
+          if (player2 == null || player2.alive) {
+            Update();
+            count = 0;
+          }
+        }
+        count++;
+      }
+    })
+
+
+    var config = {
+      type: Phaser.AUTO,
+      width: 1024,
+      height: 768,
+      physics: {
+        default: 'arcade',
+        arcade: {
+          gravity: {
+            y: 0
+          },
+          debug: false
+        }
+      },
+      scene: [MainMenu, MapEditor, MapSelection, TwoPlayerSetup, Coop, Game, GameOver, HighScores, Settings, Lootbox]
+    };
+
+    var game = new Phaser.Game(config);
+    var cursors;
+    var player;
+    var player2;
+    var food;
+    var portal1;
+    var portal2;
+    var direction;
+    var direction2;
+
+    const SPEED = 200;
+    var Directions = {
+      UP: 1,
+      RIGHT: 2,
+      DOWN: 3,
+      LEFT: 4
+    };
+    var count;
+    var needGrow = false;
+    var score;
+    var scoreText;
+    var writtenScores = [];
+    var div;
+
+    function Update() {
+      switch (direction) {
+        case Directions.UP:
+          player.headPos.y -= 16;
+          break;
+        case Directions.RIGHT:
+          player.headPos.x += 16;
+          break;
+        case Directions.DOWN:
+          player.headPos.y += 16;
+          break;
+        case Directions.LEFT:
+          player.headPos.x -= 16;
+          break;
+      }
+      if (player2 != null) {
+        switch (direction2) {
+          case Directions.UP:
+            player2.headPos.y -= 16;
+            break;
+          case Directions.RIGHT:
+            player2.headPos.x += 16;
+            break;
+          case Directions.DOWN:
+            player2.headPos.y += 16;
+            break;
+          case Directions.LEFT:
+            player2.headPos.x -= 16;
+            break;
+        }
+      }
+
+      if (player.headPos.x === portal1.x && player.headPos.y === portal1.y) {
+        player.headPos.x = portal2.x;
+        player.headPos.y = portal2.y;
+        game.sound.play('portal')
+      } else if (player.headPos.x === portal2.x && player.headPos.y === portal2.y) {
+        player.headPos.x = portal1.x;
+        player.headPos.y = portal1.y;
+        game.sound.play('portal')
+      }
+      if (player2 != null && player2.headPos.x === portal1.x && player2.headPos.y === portal1.y) {
+        player2.headPos.x = portal2.x;
+        player2.headPos.y = portal2.y;
+        game.sound.play('portal')
+      } else if (player2 != null && player2.headPos.x === portal2.x && player2.headPos.y === portal2.y) {
+        player2.headPos.x = portal1.x;
+        player2.headPos.y = portal1.y;
+        game.sound.play('portal')
+      }
+
+      Phaser.Actions.ShiftPosition(player.body.getChildren(), player.headPos.x, player.headPos.y, 1, player.tailPos);
+      if (player2 != null) {
+        Phaser.Actions.ShiftPosition(player2.body.getChildren(), player2.headPos.x, player2.headPos.y, 1, player2.tailPos);
+      }
+
+      needMove = false;
+      needMove2 = false;
+
+      if (food.pos.x === player.headPos.x && food.pos.y === player.headPos.y) {
+        grow(1);
+        var pos = generateFood();
+        food.setPosition(pos.x, pos.y);
+        food.pos.x = pos.x;
+        food.pos.y = pos.y;
+      }
+      if (player2 != null && food.pos.x === player2.headPos.x && food.pos.y === player2.headPos.y) {
+        grow(2);
+        var pos = generateFood();
+        food.setPosition(pos.x, pos.y);
+        food.pos.x = pos.x;
+        food.pos.y = pos.y;
+      }
+
+      for (var i = 1; i < player.body.getLength(); i++) {
+        if (player.headPos.x === player.body.getChildren()[i].x && player.headPos.y === player.body.getChildren()[i].y) {
+          player.alive = false;
+          die();
+        }
+      }
+      if (currentMap[parseInt(player.headPos.y / 16)][parseInt(player.headPos.x / 16)] == 1) {
+        player.alive = false;
+        die();
+      }
+      if (player2 != null) {
+        for (var i = 1; i < player2.body.getLength(); i++) {
+          if (player2.headPos.x === player2.body.getChildren()[i].x && player2.headPos.y === player2.body.getChildren()[i].y) {
+            player2.alive = false;
+            die();
+          }
+        }
+        if (currentMap[parseInt(player2.headPos.y / 16)][parseInt(player2.headPos.x / 16)] == 1) {
+          player2.alive = false;
+          die();
+        }
+      }
+    }
+
+    function generateFood() {
+      var x = parseInt((Math.random() * 62) + 1) * 16 + 8;
+      var y = parseInt((Math.random() * 46) + 1) * 16 + 8;
+      if (player2 != null) {
+        while (true) {
+          if (player.body.getLength > player2.body.getLength) {
+            for (var i = 0; i < player.body.getLength; i++) {
+              if ((x === player.body.getChildren()[i].x && y === player.body.getChildren()[i].y) || (x === player2.body.getChildren()[i].x && y === player2.body.getChildren()[i].y)) {
+                x = parseInt((Math.random() * 62) + 1) * 16 + 8;
+                y = parseInt((Math.random() * 46) + 1) * 16 + 8;
+                i = 0;
+              }
+            }
+          } else {
+            for (var i = 0; i < player2.body.getLength; i++) {
+              if (x === player.body.getChildren()[i].x && y === player.body.getChildren()[i].y || (x === player2.body.getChildren()[i].x && y === player2.body.getChildren()[i].y)) {
+                x = parseInt((Math.random() * 62) + 1) * 16 + 8;
+                y = parseInt((Math.random() * 46) + 1) * 16 + 8;
+                i = 0;
+              }
+            }
+          }
+          if (currentMap[parseInt(y / 16)][parseInt(x / 16)] == 1 || (x == portal1.x && y == portal1.y) || (x == portal2.x && y == portal2.y) || (player2 != null && x == player2.headPos.x && y == player2.headPos.y)) {
+            x = parseInt((Math.random() * 62) + 1) * 16 + 8;
+            y = parseInt((Math.random() * 46) + 1) * 16 + 8;
+          } else {
+            break;
+          }
+        }
+      } else {
+        while (true) {
+          for (var i = 0; i < player.body.getLength; i++) {
+            if ((x === player.body.getChildren()[i].x && y === player.body.getChildren()[i].y)) {
+              x = parseInt((Math.random() * 62) + 1) * 16 + 8;
+              y = parseInt((Math.random() * 46) + 1) * 16 + 8;
+              i = 0;
+            }
+          }
+          if (currentMap[parseInt(y / 16)][parseInt(x / 16)] == 1 || (x == portal1.x && y == portal1.y) || (x == portal2.x && y == portal2.y)) {
+            x = parseInt((Math.random() * 62) + 1) * 16 + 8;
+            y = parseInt((Math.random() * 46) + 1) * 16 + 8;
+          } else {
+            break;
+          }
+        }
+      }
+
+      return {
+        x: x,
+        y: y
+      }
+    }
+
+    function grow(num) {
+      score++;
+      if (num == 1) {
+        imageWrap %= parseInt(snakeTheme.split(" ")[0]);
+        player.body.create(player.tailPos.x, player.tailPos.y, "" + imageWrap++);
+      } else {
+        player2.body.create(player2.tailPos.x, player2.tailPos.y, 'snake2');
+      }
+      game.sound.play('eat')
+    }
+
+    function die() {
+      resetCursors = true;
+      spacebar.reset();
+      game.sound.stopAll();
+      game.sound.play('death')
+      game.scene.stop('Game')
+      game.scene.start("GameOver")
+      setScore("Your Name")
+    }
+
+    function newHighscore() {
+      div = document.createElement("div");
+      var input = document.createElement("input");
+      input.setAttribute("placeholder", "Name")
+      input.id = "name";
+      var submit = document.createElement("button");
+      submit.appendChild(document.createTextNode("Submit"))
+      div.appendChild(input);
+      div.appendChild(submit);
+      div.style.position = "absolute";
+      div.style.top = "675px";
+      div.style.left = "450px";
+
+      document.body.appendChild(div);
+      submit.onclick = function() {
+        setScore(document.getElementById("name").value)
+      }
+      var text = game.scene.getScene("GameOver").add.text(380, 700, "new high score lawl ecksdee 69420", {
+        fontSize: '16pt',
+        fill: '#4286f4'
+      })
+      text.depth = 999;
+
+      var random = Math.random()
+      if (random > -1) //percent change to get box
+      {
+        numLootboxes++;
+        localStorage.setItem("box", numLootboxes)
+        var lootbox = game.scene.getScene("GameOver").add.text(450, 650, "1 lootbox gained", {
+          fontSize: '16pt',
+          fill: '#ff00ff'
+        })
+        lootbox.depth = 999;
+      }
+    }
+
+    function setScore(name) {
+      if (name === "Your Name") {
+        var place = -1;
+        var low = JSON.parse(localStorage.getItem("10"));
+        if (low == "null" || !low || score > parseInt(low.score)) {
+          for (var i = 1; i <= 10; i++) {
+            var highscore = JSON.parse(localStorage.getItem("" + i));
+            if (!highscore || score > highscore.score) {
+              newHighscore();
+              var save = {
+                score: score,
+                name: name,
+                map: mapname,
+                mode: twoplayer,
+                theme: snakeTheme.split(" ")[1]
+              }
+              var saves = []
+              for (var j = i; j <= 9; j++) {
+                saves.push(localStorage.getItem("" + j));
+              }
+              for (var j = i + 1; j <= 10; j++) {
+                localStorage.setItem("" + j, saves[j - i - 1])
+              }
+              localStorage.setItem("" + i, JSON.stringify(save))
+              place = i;
+              break;
+            }
+          }
+        }
+      } else {
+        for (var i = 1; i <= 10; i++) {
+          var highscore = JSON.parse(localStorage.getItem("" + i));
+          if (highscore && highscore.name === "Your Name") {
+            var newsave = {
+              name: name,
+              score: highscore.score,
+              map: mapname,
+              mode: twoplayer,
+              theme: snakeTheme.split(" ")[1]
+            }
+            localStorage.setItem("" + i, JSON.stringify(newsave))
+            document.body.removeChild(div);
+            break
+          }
+        }
+      }
+      writeSaves("GameOver");
+    }
+
+    function writeSaves(scene, name) {
+      for (var i = 0; i < writtenScores.length; i++) {
+        writtenScores[i].destroy();
+      }
+      writtenScores = []
+      if (name == null) {
+        for (var i = 1; i < 11; i++) {
+          var highscore = JSON.parse(localStorage.getItem("" + i));
+          var mode = "";
+          if (highscore && highscore.mode) {
+            mode = "2"
+          } else {
+            mode = "1"
+          }
+          if (i < 6 && highscore) {
+            writtenScores.push(game.scene.getScene(scene).add.text(250, 500 + 25 * (i - 1), highscore.score + " - " + highscore.name + " - " + highscore.map + " - " + mode + " - " + highscore.theme));
+          } else if (highscore) {
+            writtenScores.push(game.scene.getScene(scene).add.text(650, 500 + 25 * (i - 1 - 5), highscore.score + " - " + highscore.name + " - " + highscore.map + " - " + mode + " - " + highscore.theme));
+          }
+        }
+      } else {
+        var place = 0;
+        for (var i = 1; i < 11; i++) {
+          var highscore = JSON.parse(localStorage.getItem("" + i));
+          var mode = "";
+          if (highscore && highscore.mode == true) {
+            mode = "2"
+          } else {
+            mode = "1"
+          }
+          if (place < 6 && highscore) {
+            if (highscore.map === name) {
+              writtenScores.push(game.scene.getScene(scene).add.text(250, 500 + 25 * (place++ - 1), highscore.score + " - " + highscore.name + " - " + highscore.map + " - " + mode + " - " + highscore.theme));
+            } else {
+              var nump;
+              if (name == "1 Player") {
+                nump = false;
+              } else if (name == "2 Player") {
+                nump = true;
+              } else {
+                nump = null
+              }
+              if (highscore.mode === nump) {
+                writtenScores.push(game.scene.getScene(scene).add.text(250, 500 + 25 * (place++ - 1), highscore.score + " - " + highscore.name + " - " + highscore.map + " - " + mode + " - " + highscore.theme));
+              }
+            }
+          } else if (highscore) {
+            if (highscore.map === name) {
+              writtenScores.push(game.scene.getScene(scene).add.text(650, 500 + 25 * (place++ - 1 - 5), highscore.score + " - " + highscore.name + " - " + highscore.map + " - " + mode + " - " + highscore.theme));
+            } else {
+              var nump;
+              if (name === "1 Player") {
+                nump = false;
+              } else {
+                nump = true;
+              }
+              if (place < 6 && highscore.mode === nump) {
+                writtenScores.push(game.scene.getScene(scene).add.text(250, 500 + 25 * (place++ - 1 - 5), highscore.score + " - " + highscore.name + " - " + highscore.map + " - " + mode + " - " + highscore.theme));
+              } else {
+                writtenScores.push(game.scene.getScene(scene).add.text(650, 500 + 25 * (place++ - 1 - 6), highscore.score + " - " + highscore.name + " - " + highscore.map + " - " + mode + " - " + highscore.theme));
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function pushMap(name) {
+      if (name === undefined && document.getElementById("name") === null) {
+        div = document.createElement("div");
+        var input = document.createElement("input");
+        input.setAttribute("placeholder", "Name")
+        input.id = "name";
+        var submit = document.createElement("button");
+        submit.appendChild(document.createTextNode("Submit"))
+        div.appendChild(input);
+        div.appendChild(submit);
+        div.style.position = "absolute";
+        div.style.top = "675px";
+        div.style.left = "450px";
+        document.body.appendChild(div);
+        submit.onclick = function() {
+          pushMap(document.getElementById("name").value)
+        }
+      } else if (name) {
+        putMapInStorage(name);
+        document.body.removeChild(div);
+      }
+    }
+
+    function putMapInStorage(name) {
+      var obj = {
+        name: name,
+        map: mapGrid
+      }
+      if (localStorage.getItem("maps") != null) {
+        var maps = JSON.parse(localStorage.getItem("maps"));
+        maps.push(obj)
+        localStorage.setItem("maps", JSON.stringify(maps))
+      } else {
+        var maps = [obj];
+        localStorage.setItem("maps", JSON.stringify(maps))
+      }
+    }
+
+    function putBuiltInMapInStorage(name) {
+      var obj = {
+        name: name,
+        map: mapGrid
+      }
+      if (localStorage.getItem("gameMaps") != null) {
+        var maps = JSON.parse(localStorage.getItem("gameMaps"));
+        maps.push(obj)
+        localStorage.setItem("gameMaps", JSON.stringify(maps))
+      } else {
+        var maps = [obj];
+        localStorage.setItem("gameMaps", JSON.stringify(maps))
+      }
+    }
+
+    function loadMap(name) {
+      if (name != null) {
+        var maps = JSON.parse(localStorage.getItem("maps"))
+        for (var i = 0; i < maps.length; i++) {
+          var temp = maps[i];
+          if (temp.name === mapname) {
+            currentMap = maps[i].map
+            mapname = temp.name
+          }
+        }
+
+      } else {
+        var maps = JSON.parse(localStorage.getItem("gameMaps"));
+        var mapString = "map" + mapnum;
+        mapname = mapString
+        for (var i = 0; i < 3; i++) {
+          if (maps[i].name == mapString) {
+            currentMap = maps[i].map;
+          }
+        }
+      }
+    }
+
+    function openLootbox() {
+      var lockedItems = JSON.parse(localStorage.getItem("locked"))
+      var unlockedItems = JSON.parse(localStorage.getItem("unlocked"))
+      var theme = lockedItems.themes[parseInt(Math.random() * lockedItems.themes.length)]
+      var name = theme.theme
+      var randomProp = Object.keys(theme)[parseInt(Math.random() * Object.keys(theme).length - 1) + 1]
+
+      for (var i = 0; i < unlockedItems.themes.length; i++) {
+        if (unlockedItems.themes[i].theme == name) {
+          var unlockedTheme = unlockedItems.themes[i]
+          unlockedTheme[randomProp] = true;
+          delete theme[randomProp]
+          game.scene.getScene("Lootbox").add.text(310, 480, "Unlocked: " + randomProp + " for " + unlockedTheme.theme.split(" ")[1], {
+            fontSize: "24pt",
+            color: "#ffff00"
+          })
+        }
+      }
+      localStorage.setItem("unlocked", JSON.stringify(unlockedItems))
+      localStorage.setItem("locked", JSON.stringify(lockedItems))
+    }
+
+    function addOptions() {
+      var unlockedItems = JSON.parse(localStorage.getItem("unlocked")).themes
+      var dropdowns = document.getElementsByClassName("settings");
+      for (var i = 0; i < unlockedItems.length; i++) {
+        var obj = unlockedItems[i];
+        switch (obj.theme) {
+          case "3 America":
+            if (obj.snake) {
+              document.getElementById("snake-america").className = "visible"
+            }
+            if (obj.bg) {
+              document.getElementById("bg-america").className = "visible"
+            }
+            if (obj.food) {
+              document.getElementById("food-america").className = "visible"
+            }
+            if (obj.wall) {
+              document.getElementById("wall-america").className = "visible"
+            }
+            if (obj.sfx) {
+              document.getElementById("sfx-america").className = "visible"
+            }
+            if (obj.music) {
+              document.getElementById("music-america").className = "visible"
+            }
+            if (obj.portal) {
+              document.getElementById("portal-america").className = "visible"
+            }
+            break;
+          case "3 MLG":
+            if (obj.snake) {
+              document.getElementById("snake-mlg").className = "visible"
+            }
+            if (obj.bg) {
+              document.getElementById("bg-mlg").className = "visible"
+            }
+            if (obj.food) {
+              document.getElementById("food-mlg").className = "visible"
+            }
+            if (obj.wall) {
+              document.getElementById("wall-mlg").className = "visible"
+            }
+            if (obj.sfx) {
+              document.getElementById("sfx-mlg").className = "visible"
+            }
+            if (obj.music) {
+              document.getElementById("music-mlg").className = "visible"
+            }
+            if (obj.portal) {
+              document.getElementById("portal-mlg").className = "visible"
+            }
+            break;
+          case "4 minecraft":
+            if (obj.snake) {
+              document.getElementById("snake-minecraft").className = "visible"
+            }
+            if (obj.bg) {
+              document.getElementById("bg-minecraft").className = "visible"
+            }
+            if (obj.food) {
+              document.getElementById("food-minecraft").className = "visible"
+            }
+            if (obj.wall) {
+              document.getElementById("wall-minecraft").className = "visible"
+            }
+            if (obj.sfx) {
+              document.getElementById("sfx-minecraft").className = "visible"
+            }
+            if (obj.music) {
+              document.getElementById("music-minecraft").className = "visible"
+            }
+            if (obj.portal) {
+              document.getElementById("portal-minecraft").className = "visible"
+            }
+            break;
+          case "1 roblox":
+            if (obj.snake) {
+              document.getElementById("snake-roblox").className = "visible"
+            }
+            if (obj.bg) {
+              document.getElementById("bg-roblox").className = "visible"
+            }
+            if (obj.food) {
+              document.getElementById("food-roblox").className = "visible"
+            }
+            if (obj.wall) {
+              document.getElementById("wall-roblox").className = "visible"
+            }
+            if (obj.sfx) {
+              document.getElementById("sfx-roblox").className = "visible"
+            }
+            if (obj.music) {
+              document.getElementById("music-roblox").className = "visible"
+            }
+            if (obj.portal) {
+              document.getElementById("portal-roblox").className = "visible"
+            }
+            break;
+        }
+      }
+    }
+  </script>
+</body>
+
+</html>
