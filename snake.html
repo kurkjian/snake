@@ -111,6 +111,44 @@
     <option value="1 roblox" class="hidden" id="portal-roblox">roblox</option>
   </select>
   <script type="text/javascript">
+
+    var config = {
+      type: Phaser.AUTO,
+      width: 1024,
+      height: 768,
+      physics: {
+        default: 'arcade',
+        arcade: {
+          gravity: {
+            y: 0
+          },
+          debug: false
+        }
+      },
+      scene: [MainMenu, MapEditor, MapSelection, TwoPlayerSetup, Coop, Game, GameOver, HighScores, Settings, Lootbox]
+    };
+
+    var game = new Phaser.Game(config);
+    var cursors;
+    var player;
+    var player2;
+    var food;
+    var portal1;
+    var portal2;
+    var direction;
+    var direction2;
+
+    var Directions = {
+      UP: 1,
+      RIGHT: 2,
+      DOWN: 3,
+      LEFT: 4
+    };
+    var count;
+    var score;
+    var scoreText;
+    var writtenScores = [];
+    var div;
     var spacebar;
     var maps = [];
     var mapnum = -1;
@@ -133,6 +171,7 @@
     var downKeys;
     var leftKeys;
 
+    // Setup the default theme if the game is being played for the first time
     if (localStorage.getItem("settings") == null) {
       var defaultSettings = {
         snake: "1 default",
@@ -147,7 +186,7 @@
       localStorage.setItem("settings", JSON.stringify(defaultSettings));
     }
 
-    //Theme variables
+    // Theme variables --> theme chosen will be persistent through reloads
     var snakeTheme = JSON.parse(localStorage.getItem("settings")).snake;
     var foodTheme = JSON.parse(localStorage.getItem("settings")).food;
     var wallTheme = JSON.parse(localStorage.getItem("settings")).wall;
@@ -156,17 +195,19 @@
     var musicTheme = JSON.parse(localStorage.getItem("settings")).music;
     var portalTheme = JSON.parse(localStorage.getItem("settings")).portal;
 
+    // Controls the image being used for the snake body
     var imageWrap = 1;
 
     var isPlaying = false;
     var needMove = false;
     var needMove2 = false;
 
+    // Lootboxes
     var numLootboxes = 0;
     if (localStorage.getItem("box") != null) {
       numLootboxes = parseInt(localStorage.getItem("box"));
     }
-
+    // Only used for first load, sets up locked/unlocked themes
     if (localStorage.getItem("locked") == null) {
       var list = document.getElementById('body');
       var locked = {};
@@ -256,6 +297,7 @@
         });
       },
       update: function() {
+        // Set up number of players for coop
         if (numbers.two.isDown) {
           coopnum = 2;
           this.scene.stop("Coop")
@@ -287,6 +329,7 @@
         twoplayer = true;
         coop = false;
         coopnum = 1;
+        // Had issues with spacebar ghosting, so it is redefined/reset in multiple places
         spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         spacebar.reset();
       },
@@ -314,7 +357,9 @@
       },
       create: function() {
         this.bg = this.add.sprite(512, 384, "bg").setInteractive();
+        // Handle mouse click
         this.bg.on('pointerdown', function() {
+          // Change appropiate cell in the matrix
           var i = parseInt(game.input.mousePointer.y / 16)
           var j = parseInt(game.input.mousePointer.x / 16)
           mapGrid[i][j] = 1;
@@ -325,6 +370,7 @@
             this.add.image(i * 16 + 8, j * 16 + 8, 'tile')
           }
         }
+        // Default empty grid
         mapGrid = [
           [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
           [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -380,6 +426,7 @@
       },
       update: function() {
         if (enter.isDown) {
+          // Add input for name and push map into storage
           pushMap();
         }
         if (cursors.shift.isDown) {
@@ -407,6 +454,7 @@
         for (var i = 0; i < 3; i++) {
           var temp = this.add.sprite(512, 225 + i * 200, "map" + i).setScale(0.2, 0.20);
           temp.on('pointerdown', function() {
+            // Determine which map is clicked from the default ones
             if (this.y == 225) {
               mapnum = 0;
               mapname = "map0"
@@ -424,6 +472,7 @@
           temp.setInteractive();
         }
 
+        // Button for randomly choosing one of the three maps
         this.random = this.add.sprite(100, 700, "random").setInteractive();
         this.random.on('pointerdown', function() {
           mapnum = parseInt(Math.random() * 3);
@@ -433,10 +482,11 @@
           game.scene.start("Game")
         })
 
+        // HTML dropdown to allow the user to select a custom map
         var select = document.createElement("select");
         select.id = "custommap"
         var userMaps = JSON.parse(localStorage.getItem("maps"))
-        for (var i = 0; i < userMaps.length; i++) {
+        for (var i = 0; i < userMaps.length; i++) { // Loop through all the custom maps in localStorage
           var temp = document.createElement("option")
           temp.value = userMaps[i].name;
           temp.appendChild(document.createTextNode(userMaps[i].name))
@@ -444,20 +494,21 @@
         }
         var tempdiv = document.createElement("div");
         var submit = document.createElement("button");
-        submit.appendChild(document.createTextNode("Load"))
+        submit.appendChild(document.createTextNode("Load")) // Button to initiate loading the map
         submit.onclick = function() {
           mapname = document.getElementById("custommap").value
-          loadMap(document.getElementById("custommap").value);
+          loadMap(document.getElementById("custommap").value); // loadMap() called with selected map
           game.scene.stop("MapSelection");
           game.scene.start("Game")
         }
-        tempdiv.style.position = "absolute";
+        tempdiv.style.position = "absolute"; // CSS styling to place the dropdown in the right place
         tempdiv.style.top = "50px";
         tempdiv.style.left = "450px";
         tempdiv.appendChild(select);
         tempdiv.appendChild(submit)
         document.body.appendChild(tempdiv);
 
+        // Return to MainMenu
         this.button = this.add.sprite(100, 50, 'back').setInteractive();
         this.button.on('pointerdown', function() {
           spacebar.reset();
@@ -465,9 +516,6 @@
           game.scene.stop('MapSelection');
           game.scene.start("MainMenu")
         })
-      },
-      update: function() {
-
       }
     })
 
@@ -486,6 +534,7 @@
         addOptions();
         this.add.image(512, 384, 'settingsbg2');
         this.button = this.add.sprite(100, 50, 'back').setInteractive();
+        // When the player exits the settings scene, the applied theme is set
         this.button.on('pointerdown', function() {
           snakeTheme = document.getElementById("body").value
           foodTheme = document.getElementById("food").value
@@ -495,10 +544,13 @@
           musicTheme = document.getElementById("music").value
           portalTheme = document.getElementById("portal").value
 
+          // Set the HTML dropdowns to be invisible
           var options = document.body.getElementsByClassName("settings")
           for (var i = 0; i < options.length; i++) {
             options[i].style.display = "none"
           }
+
+          // Update the applied theme in localStorage
           var settings = JSON.parse(localStorage.getItem("settings"))
           if (settings == null) {
             var obj = {};
@@ -523,6 +575,8 @@
           game.scene.stop('Settings');
           game.scene.start('MainMenu')
         })
+
+        // Set the HTML dropdowns to be visible
         var options = document.body.getElementsByClassName("settings")
         for (var i = 0; i < options.length; i++) {
           options[i].style.display = "inline"
@@ -546,18 +600,19 @@
         this.add.image(512, 384, 'highscores')
         this.button = this.add.sprite(100, 50, 'back').setInteractive();
         this.button.on('pointerdown', function() {
-          document.body.removeChild(document.getElementById('filter'))
+          document.body.removeChild(document.getElementById('filter')) // Remove the the HTML element from the document
           game.scene.stop('HighScores');
           game.scene.start('MainMenu')
         })
         writeSaves("HighScores")
 
+        // Create the HTML filter to filter through different highscore options
         var filter = document.createElement("div");
         filter.id = "filter"
         var select = document.createElement("select");
         var userMaps = JSON.parse(localStorage.getItem("maps"))
         var builtInMaps = JSON.parse(localStorage.getItem("gameMaps"))
-        for (var i = 0; i < userMaps.length; i++) {
+        for (var i = 0; i < userMaps.length; i++) { // Add all the maps, including cusom maps
           var temp = document.createElement("option")
           temp.value = userMaps[i].name;
           temp.appendChild(document.createTextNode(userMaps[i].name))
@@ -570,6 +625,7 @@
           select.appendChild(temp);
         }
 
+        // Add options to filter by one player or two player
         var temp1 = document.createElement("option")
         temp1.appendChild(document.createTextNode("1 Player"))
         select.appendChild(temp1)
@@ -577,11 +633,13 @@
         temp2.appendChild(document.createTextNode("2 Player"))
         select.appendChild(temp2)
 
+        // Create button to apply filter
         var submit = document.createElement("button");
         submit.appendChild(document.createTextNode("Load"))
         submit.onclick = function() {
           writeSaves("HighScores", select.value)
         }
+        // CSS for filter
         filter.style.position = "absolute";
         filter.style.top = "50px";
         filter.style.left = "450px";
@@ -609,11 +667,15 @@
       },
       create: function() {
         this.add.image(512, 384, 'mainmenu')
+        // MainMenu Buttons
         this.button = this.add.sprite(124, 675, 'highscorebutton').setInteractive()
         this.editor = this.add.sprite(400, 675, 'mapeditor').setInteractive();
         this.settings = this.add.sprite(670, 675, 'settings').setInteractive()
         this.coop = this.add.sprite(900, 675, 'coop').setInteractive()
+
         spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+        // Set onclicks for each button
         this.editor.on('pointerdown', function() {
           game.scene.stop('MainMenu')
           game.scene.start('MapEditor')
@@ -631,6 +693,7 @@
           game.scene.start("Coop")
         })
 
+        // Add lootbox button to scene
         this.box = this.add.sprite(900, 400, 'lootbox').setInteractive()
         this.box.setScale(0.35, 0.35)
         this.add.text(952, 326, numLootboxes, {
@@ -641,6 +704,7 @@
           game.scene.start("Lootbox")
         })
 
+        // Add keycode for the player to select two player mode
         two = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TWO);
         if (!isPlaying) {
           this.sound.play('bgmusic')
@@ -674,7 +738,7 @@
         this.load.audio('bgmusic', 'music.mp3')
       },
       create: function() {
-        imageWrap = 1;
+        imageWrap = 1; // Reset image position for next game
         this.add.image(512, 384, 'gameover');
         spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
@@ -691,9 +755,9 @@
           fill: '#fff'
         })
         writeSaves("GameOver");
-
       },
       update: function() {
+        // Go back to MapSelection when the spacebar is pressed
         if (spacebar.isDown) {
           direction = null;
           direction2 = null
@@ -958,48 +1022,6 @@
       }
     })
 
-
-    var config = {
-      type: Phaser.AUTO,
-      width: 1024,
-      height: 768,
-      physics: {
-        default: 'arcade',
-        arcade: {
-          gravity: {
-            y: 0
-          },
-          debug: false
-        }
-      },
-      scene: [MainMenu, MapEditor, MapSelection, TwoPlayerSetup, Coop, Game, GameOver, HighScores, Settings, Lootbox]
-    };
-
-    var game = new Phaser.Game(config);
-    // game.cache.destroy()
-    var cursors;
-    var player;
-    var player2;
-    var food;
-    var portal1;
-    var portal2;
-    var direction;
-    var direction2;
-
-    const SPEED = 200;
-    var Directions = {
-      UP: 1,
-      RIGHT: 2,
-      DOWN: 3,
-      LEFT: 4
-    };
-    var count;
-    var needGrow = false;
-    var score;
-    var scoreText;
-    var writtenScores = [];
-    var div;
-
     function Update() {
       switch (direction) {
         case Directions.UP:
@@ -1101,8 +1123,7 @@
             player2.alive = false;
             die();
           }
-        } catch (err)
-        {
+        } catch (err) {
 
         }
       }
@@ -1399,8 +1420,7 @@
         }
       } else {
         var regex = /\w{3}\d/
-        if(regex.exec(mapname))
-        {
+        if (regex.exec(mapname)) {
           var maps = JSON.parse(localStorage.getItem("gameMaps"));
           var mapString = "map" + mapnum;
           mapname = mapString
