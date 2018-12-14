@@ -308,6 +308,7 @@
       },
       preload: function() {
         this.load.image("tile", "tile.png");
+        this.load.image("back", "back.png")
         this.load.image("wall", snakeTheme + '/wall.png')
         this.load.image("bg", snakeTheme + "/bg.png");
       },
@@ -445,6 +446,7 @@
         var submit = document.createElement("button");
         submit.appendChild(document.createTextNode("Load"))
         submit.onclick = function() {
+          mapname = document.getElementById("custommap").value
           loadMap(document.getElementById("custommap").value);
           game.scene.stop("MapSelection");
           game.scene.start("Game")
@@ -477,12 +479,12 @@
         })
       },
       preload: function() {
-        this.load.image('settingsbg', 'settingsbg2.png');
+        this.load.image('settingsbg2', 'settingsbg2.png');
         this.load.image('back', 'back.png')
       },
       create: function() {
         addOptions();
-        this.add.image(512, 384, 'settingsbg');
+        this.add.image(512, 384, 'settingsbg2');
         this.button = this.add.sprite(100, 50, 'back').setInteractive();
         this.button.on('pointerdown', function() {
           snakeTheme = document.getElementById("body").value
@@ -695,6 +697,7 @@
         if (spacebar.isDown) {
           direction = null;
           direction2 = null
+          mapname = ""
           if (document.getElementById("name") != null) {
             document.body.removeChild(document.getElementById("name").parentNode)
           }
@@ -973,6 +976,7 @@
     };
 
     var game = new Phaser.Game(config);
+    // game.cache.destroy()
     var cursors;
     var player;
     var player2;
@@ -1076,10 +1080,15 @@
           die();
         }
       }
-      if (currentMap[parseInt(player.headPos.y / 16)][parseInt(player.headPos.x / 16)] == 1) {
-        player.alive = false;
-        die();
+      try {
+        if (currentMap[parseInt(player.headPos.y / 16)][parseInt(player.headPos.x / 16)] == 1) {
+          player.alive = false;
+          die();
+        }
+      } catch (err) {
+
       }
+
       if (player2 != null) {
         for (var i = 1; i < player2.body.getLength(); i++) {
           if (player2.headPos.x === player2.body.getChildren()[i].x && player2.headPos.y === player2.body.getChildren()[i].y) {
@@ -1087,9 +1096,14 @@
             die();
           }
         }
-        if (currentMap[parseInt(player2.headPos.y / 16)][parseInt(player2.headPos.x / 16)] == 1) {
-          player2.alive = false;
-          die();
+        try {
+          if (currentMap[parseInt(player2.headPos.y / 16)][parseInt(player2.headPos.x / 16)] == 1) {
+            player2.alive = false;
+            die();
+          }
+        } catch (err)
+        {
+
         }
       }
     }
@@ -1274,7 +1288,7 @@
           }
         }
       } else {
-        var place = 0;
+        var place = 1;
         for (var i = 1; i < 11; i++) {
           var highscore = JSON.parse(localStorage.getItem("" + i));
           var mode = "";
@@ -1312,7 +1326,7 @@
               if (place < 6 && highscore.mode === nump) {
                 writtenScores.push(game.scene.getScene(scene).add.text(250, 500 + 25 * (place++ - 1 - 5), highscore.score + " - " + highscore.name + " - " + highscore.map + " - " + mode + " - " + highscore.theme));
               } else {
-                writtenScores.push(game.scene.getScene(scene).add.text(650, 500 + 25 * (place++ - 1 - 6), highscore.score + " - " + highscore.name + " - " + highscore.map + " - " + mode + " - " + highscore.theme));
+                writtenScores.push(game.scene.getScene(scene).add.text(650, 500 + 25 * (place++ - 1 - 5), highscore.score + " - " + highscore.name + " - " + highscore.map + " - " + mode + " - " + highscore.theme));
               }
             }
           }
@@ -1378,19 +1392,22 @@
         var maps = JSON.parse(localStorage.getItem("maps"))
         for (var i = 0; i < maps.length; i++) {
           var temp = maps[i];
-          if (temp.name === mapname) {
+          if (temp.name == mapname) {
             currentMap = maps[i].map
             mapname = temp.name
           }
         }
-
       } else {
-        var maps = JSON.parse(localStorage.getItem("gameMaps"));
-        var mapString = "map" + mapnum;
-        mapname = mapString
-        for (var i = 0; i < 3; i++) {
-          if (maps[i].name == mapString) {
-            currentMap = maps[i].map;
+        var regex = /\w{3}\d/
+        if(regex.exec(mapname))
+        {
+          var maps = JSON.parse(localStorage.getItem("gameMaps"));
+          var mapString = "map" + mapnum;
+          mapname = mapString
+          for (var i = 0; i < 3; i++) {
+            if (maps[i].name == mapString) {
+              currentMap = maps[i].map;
+            }
           }
         }
       }
